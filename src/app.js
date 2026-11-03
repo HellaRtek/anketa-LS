@@ -1,1 +1,1 @@
-<placeholder>
+REAL_APP
