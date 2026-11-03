@@ -1,0 +1,499 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Анкета · Логик Сфера</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Анкета ЛС">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F3B2E">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@font-face{font-family:"Manrope";src:url("fonts/manrope.woff") format("woff");font-weight:200 900;font-display:swap}
+@font-face{font-family:"Unbounded";src:url("fonts/unbounded.woff") format("woff");font-weight:200 900;font-display:swap}
+/* Layout: dark-green brand bar with four views (Анкета / Обход / Список / Выгрузка); form = section rail + one column of numbered sheets; fixed action bar at the thumb. */
+:root{
+  --brand:#0F3B2E; --brand-2:#1E5A45; --sun:#F6B91A; --sun-soft:#FFF6DA; --sun-ink:#1B2B25;
+  --paper:#F5F8F6; --surface:#ffffff; --field:#F7FAF8; --ink:#1B2B25; --muted:#4A5D55; --line:#D9E3DD; --line-strong:#B4C6BC;
+  --accent:#1E5A45; --accent-ink:#ffffff; --accent-soft:#E3EFE8;
+  --ok:#1D6F42; --ok-soft:#E1F3E8; --warn:#9A6100; --warn-soft:#FDF0D5; --bad:#B4332A; --bad-soft:#FBE5E2;
+  --shadow:0 1px 2px rgba(15,59,46,.06),0 6px 24px rgba(15,59,46,.07);
+  --f-display:"Unbounded","Manrope",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0B1A15; --surface:#12241D; --field:#173028; --ink:#E6EFEA; --muted:#9DB3A9; --line:#24413A; --line-strong:#3A6153;
+  --accent:#5FC79A; --accent-ink:#08211A; --accent-soft:#173A2E; --sun-soft:#3A2F12;
+  --ok:#4CC488; --ok-soft:#143326; --warn:#F0B048; --warn-soft:#3A2A12; --bad:#FF7A6E; --bad-soft:#3D1A17;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.25); color-scheme:dark;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0}
+html,body{background:var(--paper)}
+body{color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;font-feature-settings:"tnum" 0}
+button,input,textarea,select{font:inherit;color:inherit}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--brand)}
+a{color:var(--accent)}
+
+/* Top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--brand);color:#fff}
+.top-in{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:28px;height:28px;flex:none}
+.brand-t{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-t b{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.12em}
+.brand-t span{color:#CFE3D8;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:12px;padding:4px}
+.tab{border:0;background:transparent;border-radius:9px;min-height:42px;padding:0 14px;font-weight:700;font-size:15px;color:#D2E6DB;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tab[aria-selected="true"]{background:#fff;color:var(--brand)}
+.tab .n{font-family:var(--f-mono);font-size:12px;background:var(--sun);color:var(--sun-ink);border-radius:6px;padding:1px 6px;font-weight:600}
+.status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13.5px;color:#E3EBE6;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 12px 6px 10px;background:rgba(255,255,255,.06);cursor:pointer;min-height:36px}
+.status i{width:9px;height:9px;border-radius:50%;background:#8a9a93;flex:none}
+.status[data-s="ok"] i{background:#4CC488}
+.status[data-s="due"] i{background:var(--sun)}
+.status[data-s="err"] i{background:#FF7A6E}
+
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 140px}
+
+/* Form view */
+.formgrid{display:grid;grid-template-columns:210px minmax(0,1fr);gap:24px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 80px);display:flex;flex-direction:column;gap:4px}
+.rail a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--muted);padding:9px 12px;border-radius:10px;font-weight:600;font-size:14px;min-height:42px}
+.rail a:hover{background:var(--surface)}
+.rail a.cur{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.rail .num{font-family:var(--f-display);font-size:11.5px;font-weight:700;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line-strong);display:grid;place-items:center;flex:none}
+.rail a.done .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rail a.skip{opacity:.55}
+.rail a.miss .num{border-color:var(--bad);color:var(--bad)}
+.rail .cnt{margin-left:auto;font-family:var(--f-mono);font-size:11.5px}
+.sections{display:flex;flex-direction:column;gap:18px;min-width:0}
+.editbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--sun-soft);border:1px solid var(--sun);border-radius:12px;padding:12px 16px;font-weight:600}
+.editbar b{font-family:var(--f-mono)}
+.installbar,.warnbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:14px 16px}
+.warnbar{background:var(--warn-soft);border-color:var(--warn)}
+.installbar>div,.warnbar>div{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}
+.installbar span,.warnbar span{font-size:14.5px;color:var(--muted)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 24px 24px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 84px)}
+.sec-h{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.sec-h .num{font-family:var(--f-display);font-weight:700;font-size:15px;width:36px;height:36px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;flex:none}
+.sec-h h2{margin:0;font-family:var(--f-display);font-weight:500;font-size:16px;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+.sec-h .cnt{margin-left:auto;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.sec.staff .sec-h .num{background:var(--sun);color:var(--sun-ink)}
+.skipnote{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:15px}
+.sec.collapsed .fields{display:none}
+.sec.collapsed .skipnote{margin-bottom:0}
+.secnote{font-size:14px;color:var(--muted);margin:-4px 0 16px}
+.fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px 16px}
+.field{grid-column:span 6;display:flex;flex-direction:column;gap:8px;min-width:0}
+.w-half{grid-column:span 3}.w-third{grid-column:span 2}
+.field>label,.field>.lbl{font-size:14px;font-weight:600;color:var(--muted)}
+.lbl small,label small{font-weight:500}
+.req{color:var(--bad);font-weight:700}
+.catmark{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 7px;vertical-align:1px}
+.field.missing>label,.field.missing>.lbl{color:var(--bad)}
+.field.missing .chips .chip,.field.missing .inp input{border-color:var(--bad)}
+.inp{position:relative}
+.inp input,.field textarea,.selectbox{display:block;width:100%;max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;min-height:52px;border:1.5px solid var(--line);background:var(--field);border-radius:11px;padding:12px 14px;font-size:17px;outline:none;transition:border-color .12s,background .12s}
+.inp input{height:52px;line-height:24px}
+.inp input[type="date"]{text-align:left}
+.inp input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
+.inp input[type="date"]::-webkit-calendar-picker-indicator{opacity:.6}
+.field textarea{min-height:88px;resize:vertical;line-height:1.4}
+.inp input:focus,.field textarea:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+.inp input:disabled{opacity:.45}
+.inp input.num{font-family:var(--f-mono);font-size:18px;letter-spacing:.06em}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{min-height:52px;padding:0 18px;border-radius:11px;border:1.5px solid var(--line-strong);background:var(--surface);font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:9px;text-align:left;line-height:1.2;transition:background .1s,border-color .1s,transform .06s}
+.chip:active{transform:scale(.97)}
+.chip[data-m]::before{content:"";width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line-strong);flex:none;background:var(--field)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip[data-m][aria-pressed="true"]::before{border-color:var(--accent-ink);background:var(--accent-ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%231E5A45' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.chip.pri{min-width:76px;justify-content:center;font-family:var(--f-display);font-weight:700;font-size:18px}
+.chip.pri[data-v="A"][aria-pressed="true"]{background:var(--sun);border-color:var(--sun);color:var(--sun-ink)}
+.chips.fill .chip{width:100%}
+.chips.sm .chip{min-height:44px;padding:0 14px;font-size:15px}
+.other{margin-top:4px;display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 12px 12px 0}
+.other .lbl{font-size:14px;font-weight:700;color:var(--ink)}
+.other .inp input{background:var(--surface)}
+.hint{font-size:13px;color:var(--muted)}
+.hint.flash{color:var(--warn);font-weight:700}
+.field.boxed{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;gap:10px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chip:focus-visible{outline-offset:3px}
+.num svg{width:18px;height:18px}
+.rail .num svg{width:15px;height:15px}
+
+/* Stand input + catalog suggestions */
+.standrow{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.standrow .letters .chip{min-width:52px;justify-content:center;font-family:var(--f-display);font-weight:700;padding:0 12px}
+.standrow .inp{flex:1;min-width:160px;max-width:260px}
+.sugg{display:flex;flex-direction:column;border:1.5px solid var(--accent);border-radius:12px;overflow:hidden;background:var(--surface)}
+.sugg .sg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 14px;align-items:center;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:10px 14px;min-height:56px;cursor:pointer}
+.sugg .sg:last-child{border-bottom:0}
+.sugg .sg:active,.sugg .sg:hover{background:var(--accent-soft)}
+.sg .code{font-family:var(--f-mono);font-weight:700;font-size:15px;color:var(--accent);grid-row:span 2}
+.sg .nm{font-weight:700;font-size:15.5px}
+.sg .mt{font-size:13px;color:var(--muted);grid-column:2}
+.sg .bd{grid-row:span 2;grid-column:3}
+.sugg .more{padding:8px 14px;font-size:13px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap;border:1px solid var(--line-strong);color:var(--muted)}
+.badge.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.badge.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.badge.sun{background:var(--sun-soft);border-color:var(--sun);color:var(--sun-ink)}
+.notice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--sun-soft);border:1px solid var(--sun);border-radius:12px;padding:10px 14px;font-size:15px;font-weight:600}
+.notice>span{flex:1;min-width:200px}
+
+/* Photos */
+.ph-slot{position:relative;height:clamp(170px,24vw,240px);border:2px dashed var(--line-strong);border-radius:14px;background:var(--field);overflow:hidden}
+.ph-slot.has{border-style:solid;border-color:var(--line)}
+.ph-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--accent);font-weight:700;font-size:16px;text-align:center;padding:12px}
+.ph-empty svg{width:44px;height:44px}
+.ph-empty small{color:var(--muted);font-weight:500;font-size:13px}
+.ph-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.ph-miss,.ph-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;color:var(--muted);font-weight:600;background:var(--field)}
+.ph-acts{display:flex;gap:8px;flex-wrap:wrap}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
+.viewer{position:fixed;inset:0;z-index:60;background:rgba(8,20,16,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.viewer img{max-width:100%;max-height:calc(100% - 80px);object-fit:contain;border-radius:8px}
+.viewer .btn{background:#fff;color:#1B2B25;border-color:#fff}
+
+/* Sheets (dialogs) */
+.sheet-wrap{position:fixed;inset:0;z-index:55;background:rgba(8,20,16,.55);display:flex;align-items:center;justify-content:center;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{background:var(--surface);color:var(--ink);border-radius:18px;box-shadow:var(--shadow);width:100%;max-width:720px;max-height:100%;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.sheet h3{margin:0;font-family:var(--f-display);font-weight:500;font-size:17px;text-transform:uppercase;letter-spacing:.02em}
+.sheet p{margin:0;color:var(--muted)}
+.sheet .btns{display:flex;gap:10px;flex-wrap:wrap}
+.act{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--field)}
+.act b{font-size:16px}
+.act .meta{font-size:14.5px;color:var(--muted);overflow-wrap:anywhere}
+.act .meta strong{color:var(--ink);font-weight:700}
+.act .row{display:flex;gap:10px;flex-wrap:wrap}
+.act.sun{background:var(--sun-soft);border-color:var(--sun)}
+.act.warn{background:var(--warn-soft);border-color:var(--warn)}
+.res-h{display:flex;align-items:center;gap:16px}
+.res-h .pchip{width:52px;height:52px;font-size:22px;border-radius:12px}
+.res-h div{display:flex;flex-direction:column;min-width:0}
+.res-h b{font-size:18px}
+.res-h span{color:var(--muted);font-size:14.5px}
+.xl{border:1px solid #c9d3cd;border-radius:10px;overflow:auto;background:#fff;color:#1B2B25}
+.xl-t{display:flex;align-items:center;gap:8px;background:#1D6F42;color:#fff;padding:8px 12px;font-size:13px;font-weight:700}
+.xl-t i{font-style:normal;background:#fff;color:#1D6F42;border-radius:3px;width:18px;height:18px;display:grid;place-items:center;font-size:11px}
+.xl table{min-width:0;width:max-content;border-collapse:collapse}
+.xl th,.xl td{border:1px solid #dfe5e1;padding:6px 10px;font-size:13px;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;background:#fff;position:static;text-transform:none;letter-spacing:0;color:#1B2B25}
+.xl th{background:#E3EAFC;font-weight:700}
+.xl tr.hl td{background:#FFF6DA}
+.sheet .foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+/* Action bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(15,59,46,.07)}
+.bar-in{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bar .info{flex:1;min-width:160px;display:flex;flex-direction:column;line-height:1.25}
+.bar .info b{font-family:var(--f-mono);font-size:15px}
+.bar .info span{font-size:13px;color:var(--muted)}
+.btn{min-height:52px;padding:0 22px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);font-weight:700;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;min-width:200px;font-size:17px}
+.btn.sun{background:var(--sun);border-color:var(--sun);color:var(--sun-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff}
+.btn.sm{min-height:42px;padding:0 14px;font-size:14.5px;min-width:0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{background:var(--sun);border-color:var(--sun);color:var(--sun-ink)}}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);opacity:0;pointer-events:none;background:var(--ink);color:var(--surface);padding:12px 18px;border-radius:12px;font-weight:600;z-index:70;transition:opacity .18s,transform .18s;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--bad);color:#fff}
+
+/* List / plan views */
+.listhead{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search{flex:1;min-width:220px}
+.search input{width:100%;min-height:50px;border:1.5px solid var(--line);background:var(--surface);border-radius:11px;padding:0 14px;font-size:16px;outline:none}
+.search input:focus{border-color:var(--accent)}
+select.selectbox{min-height:50px;padding:0 40px 0 14px;font-size:16px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%234A5D55' stroke-width='2'/%3E%3C/svg%3E") right 12px center/16px no-repeat;width:auto}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+th{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--field);position:sticky;top:0}
+#rows tr{cursor:pointer}
+#rows tr:hover{background:var(--field)}
+tbody tr:last-child td{border-bottom:0}
+td.no{font-family:var(--f-mono);font-size:14px;white-space:nowrap}
+td .sub{color:var(--muted);font-size:13.5px}
+td.t{font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap}
+td.ph{white-space:nowrap}
+td.ph img{width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:inline-block;vertical-align:middle;margin-right:4px}
+td .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pchip{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;font-family:var(--f-display);font-weight:700;font-size:14px;border:1.5px solid var(--line-strong);color:var(--muted)}
+.pchip.A{background:var(--sun);border-color:var(--sun);color:var(--sun-ink)}
+.pchip.B{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:6px}
+.empty .btn{margin-top:16px}
+.plancount{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.plancount{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.plan{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.pr{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.pr:last-child{border-bottom:0}
+.pr .code{font-family:var(--f-mono);font-weight:700;font-size:15px}
+.pr .code small{display:block;font-family:var(--f-body);font-weight:500;color:var(--muted);font-size:12px}
+.pr .nm{font-weight:700}
+.pr .mt{font-size:13px;color:var(--muted)}
+.pr .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.pr.done{background:var(--ok-soft)}
+.pr.refused{background:var(--field)}
+.pr.refused .nm{color:var(--muted);text-decoration:line-through}
+.pr .acts .btn.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.grouph{padding:10px 16px;background:var(--field);font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--line)}
+
+/* Export view */
+.exgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.card h3{margin:0 0 4px;font-family:var(--f-display);font-weight:500;font-size:15px;text-transform:uppercase;letter-spacing:.03em}
+.card p.d{margin:0 0 16px;color:var(--muted);font-size:14.5px;max-width:62ch}
+.stack{display:flex;flex-direction:column;gap:18px}
+.fmt{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fmt button{min-height:84px;border-radius:13px;border:1.5px solid var(--line-strong);background:var(--field);text-align:left;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.fmt button b{font-size:16.5px}
+.fmt button span{font-size:13px;color:var(--muted)}
+.fmt button.main{background:var(--brand);border-color:var(--brand);color:#fff}
+.fmt button.main span{color:#D2E6DB}
+.fmt button.wide{grid-column:1/-1}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--field)}
+.stat b{display:block;font-family:var(--f-mono);font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--muted)}
+.mem{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.mem .stat b{font-size:19px}
+.mem .stat.warn{background:var(--warn-soft);border-color:var(--warn)}
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.setgrid .field{grid-column:auto}
+.setgrid .field.full{grid-column:1/-1}
+details.prev{margin-top:16px}
+details.prev summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+details.prev pre{white-space:pre-wrap;word-break:break-word;font-family:var(--f-mono);font-size:12.5px;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:420px;overflow:auto;margin:8px 0 0}
+.note{font-size:13.5px;color:var(--muted);margin-top:12px}
+.rowbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.ready{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--ok-soft);border:1px solid var(--ok);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.ready>div{flex:1;min-width:200px;display:flex;flex-direction:column}
+.ready span{font-size:13.5px;color:var(--muted)}
+.catinfo{display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+.catinfo b{font-size:16px}
+
+@media (max-width:900px){
+  .formgrid{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:2px}
+  .rail a{flex:none;background:var(--surface);border:1px solid var(--line)}
+  .rail .cnt{display:none}
+  .exgrid{grid-template-columns:minmax(0,1fr)}
+  .status{margin-left:0}
+}
+@media (max-width:640px){
+  .w-half,.w-third{grid-column:span 6}
+  .sec{padding:18px 16px 20px}
+  .bar .btn.primary{flex:1;min-width:0}
+  .stats,.plancount{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .setgrid,.fmt,.mem{grid-template-columns:minmax(0,1fr)}
+  .brand-t span{display:none}
+  .tab{padding:0 10px}
+  .pr{grid-template-columns:80px minmax(0,1fr)}
+  .pr .acts{grid-column:1/-1;justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><svg viewBox="0 0 30 30" fill="none" stroke="#F6B91A" stroke-width="2" aria-hidden="true"><circle cx="15" cy="15" r="11"/><ellipse cx="15" cy="15" rx="14" ry="5.5" transform="rotate(-25 15 15)"/></svg><div class="brand-t"><b>ЛОГИК СФЕРА</b><span id="evName">Анкета · ЮГАГРО-2026</span></div></div>
+    <nav class="tabs" role="tablist" aria-label="Разделы">
+      <button class="tab" role="tab" id="tab-form" aria-selected="true" data-view="form">Анкета</button>
+      <button class="tab" role="tab" id="tab-plan" aria-selected="false" data-view="plan">Обход</button>
+      <button class="tab" role="tab" id="tab-list" aria-selected="false" data-view="list">Список <span class="n" id="listCount">0</span></button>
+      <button class="tab" role="tab" id="tab-export" aria-selected="false" data-view="export">Выгрузка</button>
+    </nav>
+    <button class="status" id="status" data-s="wait" type="button"><i></i><span id="statusText">…</span></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- FORM -->
+  <section class="view" id="view-form" aria-labelledby="tab-form">
+    <div class="formgrid">
+      <nav class="rail" id="rail" aria-label="Разделы анкеты"></nav>
+      <div class="sections" id="sections">
+        <div class="installbar" id="installbar" hidden><div><b>Установите анкету на экран «Домой»</b><span id="installText"></span></div><button class="btn sm primary" type="button" id="installBtn" hidden>Установить</button><button class="btn sm" type="button" id="installHide">Понятно</button></div>
+        <div class="warnbar" id="memWarn" hidden><div><b>Место заканчивается</b><span id="memWarnText"></span></div><button class="btn sm" type="button" data-goto="export">Открыть «Выгрузку»</button></div>
+        <div class="editbar" id="editbar" hidden>Редактирование анкеты <b id="editNo"></b><span style="flex:1"></span><button class="btn sm" id="cancelEdit" type="button">Отменить правку</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section class="view" id="view-plan" aria-labelledby="tab-plan" hidden>
+    <div id="planNoCat" class="card empty" hidden><b>Каталог экспонентов не загружен</b>Загрузите файл каталога выставки (.xlsx) — появится список стендов по павильонам.<br><label class="btn primary" for="catFile2" style="cursor:pointer">Загрузить каталог…</label><input type="file" id="catFile2" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div>
+    <div id="planBody" hidden>
+      <div class="field" style="margin-bottom:14px"><span class="lbl">Павильон</span><div class="chips sm" id="planPav" role="group" aria-label="Павильон"></div></div>
+      <div class="plancount stats" id="planCount"></div>
+      <div class="listhead">
+        <div class="search"><input id="planQ" type="search" placeholder="Поиск: стенд или компания" autocomplete="off"></div>
+        <div class="chips sm" id="planF" role="group" aria-label="Фильтр">
+          <button class="chip" type="button" data-pf="" aria-pressed="true">Все</button>
+          <button class="chip" type="button" data-pf="todo" aria-pressed="false">Не опрошены</button>
+          <button class="chip" type="button" data-pf="later" aria-pressed="false">Позже</button>
+          <button class="chip" type="button" data-pf="refused" aria-pressed="false">Отказ</button>
+          <button class="chip" type="button" data-pf="done" aria-pressed="false">Опрошены</button>
+        </div>
+      </div>
+      <div class="plan" id="planRows"></div>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section class="view" id="view-list" aria-labelledby="tab-list" hidden>
+    <div class="listhead">
+      <div class="search"><input id="q" type="search" placeholder="Поиск: компания, фамилия, стенд, телефон" autocomplete="off"></div>
+      <select class="selectbox" id="pavF" aria-label="Павильон"></select>
+    </div>
+    <div class="listhead">
+      <div class="chips sm" id="pfilter" role="group" aria-label="Фильтр">
+        <button class="chip" type="button" data-p="" aria-pressed="true">Все</button>
+        <button class="chip" type="button" data-p="A" aria-pressed="false">A</button>
+        <button class="chip" type="button" data-p="B" aria-pressed="false">B</button>
+        <button class="chip" type="button" data-p="C" aria-pressed="false">C</button>
+        <button class="chip" type="button" data-p="urgent" aria-pressed="false">Срочно</button>
+        <button class="chip" type="button" data-p="nostand" aria-pressed="false">Без стенда</button>
+        <button class="chip" type="button" data-p="dup" aria-pressed="false">Возможные дубли</button>
+      </div>
+    </div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>№</th><th>Фото</th><th>Компания / собеседник</th><th>Павильон · стенд</th><th>Пр.</th><th>Интерес · следующий шаг</th><th>Время</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="emptyList"><b>Анкет пока нет</b>Сохранённые анкеты появятся здесь. Нажмите строку, чтобы открыть анкету для правки.</div>
+    </div>
+  </section>
+
+  <!-- EXPORT -->
+  <section class="view" id="view-export" aria-labelledby="tab-export" hidden>
+    <div class="exgrid">
+      <div class="stack">
+        <div class="card">
+          <h3>Выгрузка анкет</h3>
+          <p class="d">Excel: одна строка на анкету, шапка закреплена, фильтры включены. Markdown: сводная таблица и карточка по каждой анкете.</p>
+          <div class="field" style="margin-bottom:16px">
+            <span class="lbl">Что выгружать</span>
+            <div class="chips sm" id="scope" role="group" aria-label="Что выгружать">
+              <button class="chip" type="button" data-sc="all" aria-pressed="true">Все анкеты</button>
+              <button class="chip" type="button" data-sc="today" aria-pressed="false">За сегодня</button>
+              <button class="chip" type="button" data-sc="A" aria-pressed="false">Приоритет A</button>
+              <button class="chip" type="button" data-sc="AB" aria-pressed="false">A и B</button>
+              <button class="chip" type="button" data-sc="urgent" aria-pressed="false">Срочно</button>
+            </div>
+            <span class="hint" id="scopeCount"></span>
+          </div>
+          <div class="ready" id="ready" hidden><div><b id="readyName"></b><span id="readyInfo"></span></div><button class="btn primary" type="button" id="readySave">Сохранить файл</button><button class="btn sm" type="button" id="readyClose">Скрыть</button></div>
+          <div class="fmt">
+            <button type="button" class="main wide" id="exZip"><b>Архив с фото (.zip)</b><span>Excel, Markdown и папка с фотографиями</span></button>
+            <button type="button" id="exXlsx"><b>Excel (.xlsx)</b><span>Только таблица, без фото</span></button>
+            <button type="button" id="exMd"><b>Markdown (.md)</b><span>Сводка и карточки анкет</span></button>
+            <button type="button" id="exCsv"><b>CSV (.csv)</b><span>Разделитель «;», UTF-8</span></button>
+            <button type="button" id="exMdCopy"><b>Скопировать Markdown</b><span>В буфер обмена</span></button>
+          </div>
+          <details class="prev" id="mdPrev"><summary>Предпросмотр Markdown</summary><pre id="mdText"></pre></details>
+        </div>
+        <div class="card">
+          <h3>Итоги исследования</h3>
+          <p class="d">Только цифры, без имён и компаний: как экспоненты собирают контакты, что мешает, интерес; разрезы по разделам выставки и охват. Те, кто работает без стенда, — отдельной главой.</p>
+          <div class="stats" id="resStats"></div>
+          <div class="rowbtns">
+            <button class="btn" type="button" id="exResMd">Итоги (.md)</button>
+            <button class="btn" type="button" id="exResXlsx">Итоги (Excel)</button>
+          </div>
+          <details class="prev"><summary>Предпросмотр итогов</summary><pre id="resText"></pre></details>
+        </div>
+        <div class="card">
+          <h3>Резервная копия</h3>
+          <p class="d">Полная копия анкет с фото и отметок обхода. Через неё анкеты переносятся с планшета на планшет: загруженные объединяются с имеющимися, дубли не создаются. Сохраняйте копию каждый вечер.</p>
+          <p class="d" id="bkInfo"></p>
+          <div class="rowbtns">
+            <button class="btn primary" type="button" id="exJson">Сохранить копию (.json)</button>
+            <label class="btn" for="importFile" style="cursor:pointer">Загрузить копию…</label>
+            <input type="file" id="importFile" accept=".json,application/json" hidden>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>Сводка</h3>
+          <div class="stats" id="stats"></div>
+          <div class="mem" id="mem"></div>
+          <p class="note" id="memNote"></p>
+        </div>
+        <div class="card">
+          <h3>Каталог экспонентов</h3>
+          <div class="catinfo" id="catInfo"></div>
+          <div class="rowbtns">
+            <label class="btn" for="catFile" style="cursor:pointer">Загрузить каталог (.xlsx)…</label>
+            <input type="file" id="catFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+            <button class="btn danger" type="button" id="catDel" hidden>Удалить каталог</button>
+          </div>
+          <p class="note">Каталог хранится только на этом планшете. Обновлённый файл от организатора можно загрузить поверх — анкеты и отметки обхода сохранятся.</p>
+        </div>
+        <div class="card">
+          <h3>Настройки планшета</h3>
+          <p class="d">Код планшета входит в номер анкеты. На каждом планшете задайте свой код: Л1, Л2…</p>
+          <div class="setgrid">
+            <div class="field"><label for="setDevice">Код планшета</label><div class="inp"><input id="setDevice" maxlength="6" autocomplete="off"></div></div>
+            <div class="field"><label for="setStaff">Интервьюер</label><div class="inp"><input id="setStaff" autocomplete="off"></div></div>
+            <div class="field full"><label for="setEvent">Выставка</label><div class="inp"><input id="setEvent" autocomplete="off"></div></div>
+            <div class="field full"><span class="lbl" id="setPlatL">Устройство</span><div class="chips sm" id="setPlat" role="group" aria-labelledby="setPlatL"><button class="chip" type="button" data-pl="auto" aria-pressed="true">Автоматически</button><button class="chip" type="button" data-pl="apple" aria-pressed="false">Apple</button><button class="chip" type="button" data-pl="android" aria-pressed="false">Android</button></div><span class="hint" id="setPlatHint"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <div class="info"><b id="barNo">Л1-001</b><span id="barFill">Анкета пустая</span></div>
+    <button class="btn danger" type="button" id="delBtn" hidden>Удалить</button>
+    <button class="btn" type="button" id="clearBtn">Новая анкета</button>
+    <button class="btn primary" type="button" id="saveBtn">Сохранить анкету</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Ask: no consent / possible duplicate -->
+<div class="sheet-wrap" id="askSheet" hidden><div class="sheet" role="dialog" aria-labelledby="askTitle">
+  <h3 id="askTitle"></h3>
+  <p id="askText"></p>
+  <div class="btns" id="askBtns"></div>
+</div></div>
+
+<!-- Result card after save -->
+<div class="sheet-wrap" id="resSheet" hidden><div class="sheet" role="dialog" aria-labelledby="resTitle">
+  <h3 id="resTitle">Анкета сохранена</h3>
+  <div class="res-h"><span class="pchip" id="resPri">—</span><div><b id="resOrg"></b><span id="resWho"></span></div></div>
+  <div class="act sun" id="resUrgent" hidden><b>Срочно — нужно на этой выставке</b><div class="meta">Попросите прислать опросный лист сегодня: завтра утром у их стендистов будет своя анкета.</div></div>
+  <div class="act" id="resCal" hidden>
+    <b>Напоминание</b>
+    <div class="meta" id="actCalMeta"></div>
+    <div class="meta" id="actCalNote"></div>
+    <div class="row">
+      <button class="btn sm" type="button" id="actCalOpen">Открыть календарь ещё раз</button>
+      <button class="btn sm" type="button" id="actCalFile">Сохранить файл .ics</button>
+    </div>
+  </div>
+  <div class="act warn" id="resBackup" hidden><b>Пора сохранить резервную копию</b><div class="meta" id="resBackupText"></div><div class="row"><button class="btn sm" type="button" id="resBackupBtn">Сохранить копию сейчас</button></div></div>
+  <div><button class="btn sm" type="button" id="resXlBtn" aria-expanded="false">Как это выглядит в Excel</button></div>
+  <div class="xl" id="resXl" hidden><div class="xl-t"><i>X</i><span id="resXlName"></span></div><div id="resXlTable"></div></div>
+  <div class="foot"><button class="btn primary" type="button" id="resDone">Новая анкета</button></div>
+</div></div>
+
+<div class="viewer" id="viewer" hidden role="dialog" aria-label="Просмотр фото"><img id="viewerImg" alt=""><button class="btn" type="button" id="viewerClose">Закрыть</button></div>
