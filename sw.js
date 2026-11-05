@@ -1,5 +1,5 @@
 /* Анкета · Логик Сфера — офлайн-кэш. При обновлении приложения увеличьте номер версии. */
-const VERSION = "ls-anketa-v2";
+const VERSION = "ls-anketa-v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./fonts/manrope.woff", "./fonts/unbounded.woff"];
 
 self.addEventListener("install", e => {
